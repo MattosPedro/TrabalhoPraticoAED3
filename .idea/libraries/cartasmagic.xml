@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="cartasmagic">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/cartasmagic.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
