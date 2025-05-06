@@ -18,9 +18,10 @@ import java.net.URL;
  * 
 */
 
-@SuppressWarnings({"ALL", "LanguageDetectionInspection"})
 public class CartaDAO {
     private final String arquivo = "cartas.dat";
+    private BPlusTree<Integer, Long> indice;
+    private BPlusTree<Integer, CartaMagic> arvore;
 
     // Construtor
     public CartaDAO() throws IOException {
@@ -30,6 +31,31 @@ public class CartaDAO {
 
                 // Inicializa o último ID no cabeçalho
                 dos.writeInt(0);
+            }
+        }
+        this.indice = new BPlusTree<>(3);
+        carregarIndice();
+    }
+
+    public BPlusTree<Integer, Long> getArvore() {
+        return indice;
+    }
+
+    private void carregarIndice() throws IOException {
+        try (RandomAccessFile raf = new RandomAccessFile(arquivo, "r")) {
+            raf.seek(4); // Pula o cabeçalho
+
+            while (raf.getFilePointer() < raf.length()) {
+                long pos = raf.getFilePointer();
+                byte lapide = raf.readByte();
+                int tam = raf.readInt();
+                byte[] dados = new byte[tam];
+                raf.readFully(dados);
+
+                if (lapide == 0) {
+                    CartaMagic carta = CartaMagic.fromByteArray(dados);
+                    indice.insert(carta.getId(), pos);
+                }
             }
         }
     }
@@ -78,17 +104,6 @@ public class CartaDAO {
     }
 
     // Função para baixar o arquivo via API - exemplo de chamada
-    /*
-     * #!/bin/bash
-     * # Export your Kaggle username and API key
-     * # export KAGGLE_USERNAME=<YOUR USERNAME>
-     * # export KAGGLE_KEY=<YOUR KAGGLE KEY>
-     * 
-     * curl -L -u $KAGGLE_USERNAME:$KAGGLE_KEY\
-     * -o ~/Downloads/cartasmagic.zip\
-     * https://www.kaggle.com/api/v1/datasets/download/joaopedroreis10/cartasmagic
-     * 
-     */
     public void baixarArquivoViaAPI(String username, String key, String destinoZip)
             throws IOException, InterruptedException {
         String urlString = "https://www.kaggle.com/api/v1/datasets/download/joaopedroreis10/cartasmagic";
@@ -160,51 +175,37 @@ public class CartaDAO {
             raf.seek(0);
             int ultimoId = raf.readInt();
 
-            // Contador id
-            if (flag == "semId") {
+            if (flag.equals("semId")) {
                 carta.setId(++ultimoId);
+                raf.seek(0);
+                raf.writeInt(ultimoId);
             }
 
-            raf.seek(0);
-            raf.writeInt(ultimoId);
-
-            // Manipulação para incremento no arquivo sequencial
             byte[] byteArray = carta.toByteArray();
 
             raf.seek(raf.length());
-            raf.writeByte(0); // Lápide (0 = válido)
+            long pos = raf.getFilePointer(); // Posição antes de escrever
+            raf.writeByte(0); // Lápide
             raf.writeInt(byteArray.length);
             raf.write(byteArray);
+
+            // Atualiza índice
+            indice.insert(carta.getId(), pos);
         }
     }
 
     // Função para deletar objetos das cartas
     public boolean delete(int id) throws IOException {
+        Long pos = indice.search(id);
+        if (pos == null)
+            return false;
+
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "rw")) {
-
-            // Os primeiros 4 bytes do arquivo armazenam o último ID utilizado, logo o
-            // ponteiro é movido para a posição onde começam os registros
-            raf.seek(4);
-
-            while (raf.getFilePointer() < raf.length()) {
-                long posicao = raf.getFilePointer();
-                byte lapide = raf.readByte();
-                int tamanho = raf.readInt();
-                byte[] byteArray = new byte[tamanho];
-                raf.readFully(byteArray);
-
-                // Manipulação correta de dados
-                CartaMagic carta = CartaMagic.fromByteArray(byteArray);
-
-                // Atualização de lápide
-                if (lapide == 0 && carta.getId() == id) {
-                    raf.seek(posicao);
-                    raf.writeByte(1); // Marca como excluído
-                    return true;
-                }
-            }
+            raf.seek(pos);
+            raf.writeByte(1); // Lápide
+            indice.delete(id);
+            return true;
         }
-        return false;
     }
 
     // Função para listar todos os objetos das cartas
@@ -229,90 +230,60 @@ public class CartaDAO {
 
     // Função para ler carta a partir de ID informado de um dos objetos das cartas
     public CartaMagic read(int id) throws IOException {
+        Long pos = indice.search(id);
+        if (pos == null)
+            return null;
+
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "r")) {
-            raf.seek(4);
+            raf.seek(pos);
+            byte lapide = raf.readByte();
+            int tam = raf.readInt();
+            byte[] dados = new byte[tam];
+            raf.readFully(dados);
 
-            while (raf.getFilePointer() < raf.length()) {
-                long posicao = raf.getFilePointer();
-                byte lapide = raf.readByte();
-                int tamanhoRegistro = raf.readInt();
-
-                if (lapide == 0) {
-                    byte[] dados = new byte[tamanhoRegistro];
-                    raf.readFully(dados);
-                    CartaMagic carta = CartaMagic.fromByteArray(dados);
-
-                    if (carta.getId() == id) {
-                        return carta;
-                    }
-                } else {
-
-                    // Pula registros inválidos
-                    raf.skipBytes(tamanhoRegistro);
-                }
+            if (lapide == 0) {
+                return CartaMagic.fromByteArray(dados);
             }
         }
-        return null; // Retorna null se não encontrar
+        return null;
     }
 
     // Função para ler cartas a partir de ID's informados de objetos das cartas
     public List<CartaMagic> readMultiple(List<Integer> ids) throws IOException {
         List<CartaMagic> cartas = new ArrayList<>();
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "r")) {
-            raf.seek(4);
-
-            while (raf.getFilePointer() < raf.length()) {
-                byte lapide = raf.readByte();
-                int tamanhoRegistro = raf.readInt();
-
-                if (lapide == 0) {
-                    byte[] dados = new byte[tamanhoRegistro];
+            for (int id : ids) {
+                Long pos = indice.search(id);
+                if (pos != null) {
+                    raf.seek(pos);
+                    byte lapide = raf.readByte();
+                    int tam = raf.readInt();
+                    byte[] dados = new byte[tam];
                     raf.readFully(dados);
-                    CartaMagic carta = CartaMagic.fromByteArray(dados);
 
-                    if (ids.contains(carta.getId())) {
-                        cartas.add(carta);
+                    if (lapide == 0) {
+                        cartas.add(CartaMagic.fromByteArray(dados));
                     }
-                } else {
-
-                    // Pula registros inválidos
-                    raf.skipBytes(tamanhoRegistro);
                 }
             }
         }
         return cartas;
     }
 
-    // Função para atualizar objetos das cartas
     public boolean update(int id, CartaMagic novaCarta) throws IOException {
+        Long pos = indice.search(id);
+        if (pos == null)
+            return false;
+
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "rw")) {
-            raf.seek(4);
+            raf.seek(pos);
+            raf.writeByte(1); // Marca como excluído
+            indice.delete(id);
 
-            while (raf.getFilePointer() < raf.length()) {
-                long posicao = raf.getFilePointer();
-                byte lapide = raf.readByte();
-                int tamanhoRegistro = raf.readInt();
-
-                if (lapide == 0) {
-                    byte[] dados = new byte[tamanhoRegistro];
-                    raf.readFully(dados);
-                    CartaMagic carta = CartaMagic.fromByteArray(dados);
-
-                    if (carta.getId() == id) {
-                        raf.seek(posicao);
-                        raf.writeByte(1);
-                        novaCarta.setId(id);
-
-                        // Adiciona novo registro ao final
-                        create(novaCarta, "comId");
-                        return true;
-                    }
-                } else {
-                    raf.skipBytes(tamanhoRegistro);
-                }
-            }
+            novaCarta.setId(id);
+            create(novaCarta, "comId");
+            return true;
         }
-        return false;
     }
 
 }

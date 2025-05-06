@@ -26,6 +26,7 @@ public class Main {
                 System.out.println("5 - Atualizar carta");
                 System.out.println("6 - Excluir carta");
                 System.out.println("7 - Exibir todos os registros");
+                System.out.println("8 - Exibir a árvore B+");
                 System.out.println("0 - Sair");
                 System.out.print("Escolha uma opção: ");
 
@@ -191,6 +192,10 @@ public class Main {
                                 System.out.println(cartaItem);
                             }
                         }
+                        break;
+
+                    case 8:
+                        dao.getArvore().exibirArvore(); // Chama o método de exibição da árvore
                         break;
 
                     case 0:
