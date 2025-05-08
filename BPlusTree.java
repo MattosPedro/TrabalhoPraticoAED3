@@ -89,9 +89,24 @@ public class BPlusTree<K extends Comparable<K>, V> implements Serializable {
     }
 
     public boolean delete(K key) {
-        // Implementação de remoção não obrigatória se você apenas marcar como deletado
-        // no arquivo
-        return false;
+        BPlusNode<K, V> node = root;
+
+        // Percorre até o nó folha
+        while (!node.isLeaf) {
+            int i = Collections.binarySearch(node.keys, key);
+            int childIndex = i >= 0 ? i + 1 : -i - 1;
+            node = node.children.get(childIndex);
+        }
+
+        // Tenta encontrar a posição da chave
+        int pos = Collections.binarySearch(node.keys, key);
+        if (pos >= 0) {
+            node.keys.remove(pos);
+            node.values.remove(pos);
+            return true;
+        }
+
+        return false; // Chave não encontrada
     }
 
     public void printTree() {

@@ -15,6 +15,7 @@ import java.net.URL;
  * CLASSE CartaDAO
  *  Classe responsável por realizar o CRUD no arquivo, além de realizar a chamada e leitura do arquivo.csv no banco de dados
  * do Kaggle, criação de objetos e toda sua manipualção em arquivo sequencial
+ *  Também realiza operações na árvore B+ e na tabela hash, realizando as interações com crud entre classes
  * 
 */
 
@@ -42,10 +43,12 @@ public class CartaDAO {
         this.ultimaPosicaoRegistro = 0;
     }
 
+    // Função para obter arvore B+
     public BPlusTree<Integer, Long> getArvore() {
         return indice;
     }
 
+    // Função para carregar o indice na tabela HASH
     private void carregarIndice() throws IOException {
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "r")) {
             raf.seek(4); // Pula o cabeçalho
@@ -65,6 +68,7 @@ public class CartaDAO {
         }
     }
 
+    // Função para obter tabela
     public HashingEstendido getIndice() {
         return indiceHash;
     }
@@ -201,9 +205,8 @@ public class CartaDAO {
             // Atualiza índice
             indice.insert(carta.getId(), pos);
             ultimaPosicaoRegistro = raf.getFilePointer();
-
+            indiceHash.adicionarRegistro(carta.getId(), ultimaPosicaoRegistro);
         }
-        indiceHash.adicionarRegistro(carta.getId(), ultimaPosicaoRegistro);
 
     }
 
@@ -220,7 +223,8 @@ public class CartaDAO {
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "rw")) {
             raf.seek(pos);
             raf.writeByte(1); // Lápide
-            indice.delete(id);
+            indice.delete(id); // arvore
+            indiceHash.excluir(id); // tabela hash
             return true;
         }
     }
@@ -287,6 +291,7 @@ public class CartaDAO {
         return cartas;
     }
 
+    // Função para atualizar alguma carta no arquivo
     public boolean update(int id, CartaMagic novaCarta) throws IOException {
         Long pos = indice.search(id);
         if (pos == null)
@@ -300,6 +305,25 @@ public class CartaDAO {
             novaCarta.setId(id);
             create(novaCarta, "comId");
             return true;
+        }
+    }
+
+    // Método de exibição da tabela hash
+    public void exibirEstadoHashing() throws IOException {
+        System.out.println("\n===== Estado do Hashing Estendido =====");
+
+        for (int i = 0; i < indiceHash.getNumBuckets(); i++) {
+            System.out.print("Bucket " + i + ": ");
+            List<HashingEstendido.Registro> bucket = indiceHash.getRegistrosDoBucket(i);
+
+            if (bucket.isEmpty()) {
+                System.out.println("Vazio");
+            } else {
+                for (HashingEstendido.Registro registro : bucket) {
+                    System.out.print("ID: " + registro.getId() + ", Posição: " + registro.getPos() + " | ");
+                }
+                System.out.println();
+            }
         }
     }
 
