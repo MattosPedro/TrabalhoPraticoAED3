@@ -22,6 +22,8 @@ public class CartaDAO {
     private final String arquivo = "cartas.dat";
     private BPlusTree<Integer, Long> indice;
     private BPlusTree<Integer, CartaMagic> arvore;
+    private long ultimaPosicaoRegistro;
+    private HashingEstendido indiceHash;
 
     // Construtor
     public CartaDAO() throws IOException {
@@ -35,6 +37,9 @@ public class CartaDAO {
         }
         this.indice = new BPlusTree<>(3);
         carregarIndice();
+        this.indiceHash = new HashingEstendido(3, 10);
+        indiceHash.carregarIndice();
+        this.ultimaPosicaoRegistro = 0;
     }
 
     public BPlusTree<Integer, Long> getArvore() {
@@ -58,6 +63,10 @@ public class CartaDAO {
                 }
             }
         }
+    }
+
+    public HashingEstendido getIndice() {
+        return indiceHash;
     }
 
     // Função para codificar em Base64 (para a autenticação)
@@ -174,7 +183,7 @@ public class CartaDAO {
         try (RandomAccessFile raf = new RandomAccessFile(arquivo, "rw")) {
             raf.seek(0);
             int ultimoId = raf.readInt();
-
+            raf.seek(ultimaPosicaoRegistro);
             if (flag.equals("semId")) {
                 carta.setId(++ultimoId);
                 raf.seek(0);
@@ -191,7 +200,15 @@ public class CartaDAO {
 
             // Atualiza índice
             indice.insert(carta.getId(), pos);
+            ultimaPosicaoRegistro = raf.getFilePointer();
+
         }
+        indiceHash.adicionarRegistro(carta.getId(), ultimaPosicaoRegistro);
+
+    }
+
+    public long getPosicaoDoUltimoRegistroCriado() {
+        return ultimaPosicaoRegistro;
     }
 
     // Função para deletar objetos das cartas

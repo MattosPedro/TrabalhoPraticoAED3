@@ -27,6 +27,8 @@ public class Main {
                 System.out.println("6 - Excluir carta");
                 System.out.println("7 - Exibir todos os registros");
                 System.out.println("8 - Exibir a árvore B+");
+                System.out.println("9 - Exibir o estado do Hashing Estendido");
+                System.out.println("10 - Excluir índice hash por ID");
                 System.out.println("0 - Sair");
                 System.out.print("Escolha uma opção: ");
 
@@ -99,6 +101,12 @@ public class Main {
                         // Construtor
                         CartaMagic novaCarta = new CartaMagic(0, nome, dataLancamento, habilidades, preco);
                         dao.create(novaCarta, "semId");
+
+                        // Após criar a carta, adicione-a ao índice de Hashing Estendido
+                        long pos = dao.getPosicaoDoUltimoRegistroCriado(); // Suponha que o DAO tenha
+                        // esse método
+                        dao.getIndice().adicionarRegistro(novaCarta.getId(), pos);
+
                         System.out.println("Carta criada com sucesso!");
                         break;
 
@@ -198,6 +206,23 @@ public class Main {
                         dao.getArvore().exibirArvore(); // Chama o método de exibição da árvore
                         break;
 
+                    case 9:
+                        exibirEstadoHashing(dao);
+                        break;
+
+                    case 10:
+                        System.out.print("Digite o ID da carta para excluir do índice hash: ");
+                        int idParaExcluir = scanner.nextInt();
+                        scanner.nextLine(); // limpa buffer
+
+                        try {
+                            dao.getIndice().excluir(idParaExcluir);
+                            System.out.println("Registro removido do índice hash (se existia).");
+                        } catch (IOException e) {
+                            System.out.println("Erro ao tentar excluir do índice: " + e.getMessage());
+                        }
+                        break;
+
                     case 0:
                         running = false;
                         System.out.println("Saindo do programa...");
@@ -213,4 +238,25 @@ public class Main {
             scanner.close();
         }
     }
+
+    private static void exibirEstadoHashing(CartaDAO dao) throws IOException {
+        System.out.println("\n===== Estado do Hashing Estendido =====");
+        HashingEstendido hashingEstendido = dao.getIndice(); // Obtém o índice de Hashing Estendido
+
+        // Percorrendo todos os buckets
+        for (int i = 0; i < hashingEstendido.getNumBuckets(); i++) {
+            System.out.print("Bucket " + i + ": ");
+            List<HashingEstendido.Registro> bucket = hashingEstendido.getRegistrosDoBucket(i); // Usando o método para
+                                                                                               // acessar os registros
+            if (bucket.isEmpty()) {
+                System.out.println("Vazio");
+            } else {
+                for (HashingEstendido.Registro registro : bucket) {
+                    System.out.print("ID: " + registro.getId() + ", Posição: " + registro.getPos() + " | ");
+                }
+                System.out.println();
+            }
+        }
+    }
+
 }
