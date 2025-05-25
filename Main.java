@@ -28,6 +28,8 @@ public class Main {
                 System.out.println("7 - Exibir todos os registros");
                 System.out.println("8 - Exibir a árvore B+");
                 System.out.println("9 - Exibir o estado do Hashing Estendido");
+                System.out.println("10 - Comprimir Base de Dados");
+                System.out.println("11 - Descomprimir Base de Dados");
                 System.out.println("0 - Sair");
                 System.out.print("Escolha uma opção: ");
 
@@ -202,6 +204,35 @@ public class Main {
 
                     case 9:
                         dao.exibirEstadoHashing(); // Chama o método de exibição da tabela
+                        break;
+
+                    case 10:
+                        System.out.print("Digite o caminho do arquivo a ser comprimido: ");
+                        String caminhoOriginal = scanner.nextLine();
+
+                        System.out.print("Digite a versão (X) da compressão: ");
+                        String versao = scanner.nextLine();
+
+                        // Chamada de método de compressão
+                        try {
+                            CompressaoUtils.realizarCompressao(caminhoOriginal, versao);
+                        } catch (IOException e) {
+                            System.out.println("Erro ao realizar a compressão: " + e.getMessage());
+                        }
+                        break;
+
+                    case 11:
+                        System.out.print("Digite a versão (X) que deseja descomprimir: ");
+                        String versaoDescomp = scanner.nextLine();
+
+                        System.out.print("Digite o nome do arquivo base: ");
+                        String base = scanner.nextLine();
+
+                        try {
+                            CompressaoUtils.realizarDescompressao(base, versaoDescomp);
+                        } catch (IOException e) {
+                            System.out.println("Erro ao realizar a descompressão: " + e.getMessage());
+                        }
                         break;
                     case 0:
                         running = false;
