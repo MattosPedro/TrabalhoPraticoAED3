@@ -14,7 +14,7 @@ import java.net.URL;
 /* 
  * CLASSE CartaDAO
  *  Classe responsável por realizar o CRUD no arquivo, além de realizar a chamada e leitura do arquivo.csv no banco de dados
- * do Kaggle, criação de objetos e toda sua manipualção em arquivo sequencial
+ * do Kaggle, criação de objetos e toda a sua manipualação em arquivo sequencial
  *  Também realiza operações na árvore B+ e na tabela hash, realizando as interações com crud entre classes
  * 
 */
@@ -207,7 +207,6 @@ public class CartaDAO {
             ultimaPosicaoRegistro = raf.getFilePointer();
             indiceHash.adicionarRegistro(carta.getId(), ultimaPosicaoRegistro);
         }
-
     }
 
     public long getPosicaoDoUltimoRegistroCriado() {
@@ -325,6 +324,137 @@ public class CartaDAO {
                 System.out.println();
             }
         }
+    }
+
+    /**
+     * Busca todas as cartas cujo nome contenha o padrão informado.
+     * Utiliza o algoritmo Knuth-Morris-Pratt (KMP) para casamento eficiente de
+     * padrões.
+     *
+     * Justificativa: o KMP é um algoritmo clássico de busca de padrão em texto com
+     * complexidade linear O(n + m), onde n é o tamanho do texto e m o tamanho do
+     * padrão.
+     * Ele é mais eficiente do que a busca ingênua em cenários com muitas
+     * comparações.
+     */
+
+    public List<CartaMagic> buscarPorPadraoNoNome(String padrao) throws IOException {
+        List<CartaMagic> resultados = new ArrayList<>();
+
+        try (RandomAccessFile raf = new RandomAccessFile(arquivo, "r")) {
+            raf.seek(4); // Pula o cabeçalho
+
+            while (raf.getFilePointer() < raf.length()) {
+                long pos = raf.getFilePointer();
+                byte lapide = raf.readByte();
+                int tam = raf.readInt();
+
+                byte[] dados = new byte[tam];
+                raf.readFully(dados);
+
+                if (lapide == 0) {
+                    CartaMagic carta = CartaMagic.fromByteArray(dados);
+                    if (kmp(carta.getNome().toLowerCase(), padrao.toLowerCase())) {
+                        resultados.add(carta);
+                    }
+                }
+            }
+        }
+
+        return resultados;
+    }
+
+    /**
+     * Algoritmo Knuth-Morris-Pratt (KMP) para busca de padrão em string.
+     */
+    private boolean kmp(String texto, String padrao) {
+        int[] lps = construirLPS(padrao);
+        int i = 0; // índice para texto
+        int j = 0; // índice para padrão
+
+        while (i < texto.length()) {
+            if (texto.charAt(i) == padrao.charAt(j)) {
+                i++;
+                j++;
+                if (j == padrao.length()) {
+                    return true; // padrão encontrado
+                }
+            } else if (j > 0) {
+                j = lps[j - 1];
+            } else {
+                i++;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Constrói o vetor LPS (longest proper prefix which is also suffix)
+     * usado pelo algoritmo KMP.
+     */
+    private int[] construirLPS(String padrao) {
+        int[] lps = new int[padrao.length()];
+        int len = 0;
+        int i = 1;
+
+        while (i < padrao.length()) {
+            if (padrao.charAt(i) == padrao.charAt(len)) {
+                len++;
+                lps[i] = len;
+                i++;
+            } else if (len > 0) {
+                len = lps[len - 1];
+            } else {
+                lps[i] = 0;
+                i++;
+            }
+        }
+
+        return lps;
+    }
+
+    public CartaMagic descriptografarHabilidades(CartaMagic carta) {
+        if (carta == null)
+            return null;
+        Map<String, Integer> habilidades = carta.getHabilidades();
+
+        // Tenta descriptografar com AES
+        Map<String, Integer> habilidadesAES = CryptoUtils.decryptMapAES(habilidades);
+        if (!habilidadesAES.equals(habilidades)) {
+            return new CartaMagic(
+                carta.getId(),
+                carta.getNome(),
+                carta.getDataLancamento(),
+                habilidadesAES,
+                carta.getPreco()
+            );
+        }
+
+        // Tenta descriptografar com XOR
+        Map<String, Integer> habilidadesXOR = CryptoUtils.decryptMapXOR(habilidades, 'K');
+        if (!habilidadesXOR.equals(habilidades)) {
+            return new CartaMagic(
+                carta.getId(),
+                carta.getNome(),
+                carta.getDataLancamento(),
+                habilidadesXOR,
+                carta.getPreco()
+            );
+        }
+
+        // Se não conseguir, retorna a original
+        return carta;
+    }
+
+    // Função auxiliar para verificar se todas as chaves são legíveis (apenas letras e números)
+    private boolean todasChavesSaoLegiveis(Map<String, Integer> map) {
+        for (String key : map.keySet()) {
+            if (!key.matches("[\\p{L}\\p{N} _-]+")) { // letras, números, espaço, underline, hífen
+                return false;
+            }
+        }
+        return true;
     }
 
 }

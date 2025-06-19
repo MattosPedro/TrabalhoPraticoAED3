@@ -30,6 +30,11 @@ public class Main {
                 System.out.println("9 - Exibir o estado do Hashing Estendido");
                 System.out.println("10 - Comprimir Base de Dados");
                 System.out.println("11 - Descomprimir Base de Dados");
+                System.out.println("12 - Casamento de Padrões");
+                System.out.println("13 - Criptografar habilidades com AES");
+                System.out.println("14 - Criptografar habilidades com XOR");
+                System.out.println("15 - Descriptografar habilidades com AES");
+                System.out.println("16 - Descriptografar habilidades com XOR");
                 System.out.println("0 - Sair");
                 System.out.print("Escolha uma opção: ");
 
@@ -111,7 +116,7 @@ public class Main {
                         int id = scanner.nextInt();
                         CartaMagic carta = dao.read(id);
                         if (carta != null) {
-                            System.out.println("Carta encontrada: " + carta);
+                            System.out.println("Carta encontrada: " + dao.descriptografarHabilidades(carta));
                         } else {
                             System.out.println("Carta não encontrada!");
                         }
@@ -126,7 +131,7 @@ public class Main {
                         }
                         List<CartaMagic> cartas = dao.readMultiple(ids);
                         for (CartaMagic c : cartas) {
-                            System.out.println(c);
+                            System.out.println(dao.descriptografarHabilidades(c));
                         }
                         break;
 
@@ -193,7 +198,7 @@ public class Main {
                             System.out.println("Nenhuma carta registrada.");
                         } else {
                             for (CartaMagic cartaItem : todasCartas) {
-                                System.out.println(cartaItem);
+                                System.out.println(dao.descriptografarHabilidades(cartaItem));
                             }
                         }
                         break;
@@ -234,13 +239,84 @@ public class Main {
                             System.out.println("Erro ao realizar a descompressão: " + e.getMessage());
                         }
                         break;
+                    case 12:
+                        System.out.print("Digite o padrão a ser buscado no nome das cartas: ");
+                        String padrao = scanner.nextLine();
+
+                        try {
+                            List<CartaMagic> cartasEncontradas = dao.buscarPorPadraoNoNome(padrao);
+
+                            if (cartasEncontradas.isEmpty()) {
+                                System.out.println("Nenhuma carta encontrada com o padrão \"" + padrao + "\" no nome.");
+                            } else {
+                                System.out.println("Cartas encontradas:");
+                                for (CartaMagic novacarta : cartasEncontradas) {
+                                    System.out.println(novacarta);
+                                    System.out.println("------------------------------");
+                                }
+                            }
+                        } catch (IOException e) {
+                            System.err.println("Erro ao buscar cartas por padrão: " + e.getMessage());
+                        }
+                        break;
+                    case 13:
+                        System.out.println("Criptografando todas as habilidades com AES...");
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.encryptMapAES(habilidadesAtual));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        System.out.println(
+                                "Todas as habilidades foram criptografadas com AES. Aqui está a lista de cartas:");
+                        // Exibe todas as cartas após criptografia
+                        for (CartaMagic cartaCriptografada : dao.listarTodos()) {
+                            System.out.println(cartaCriptografada);
+                        }
+                        break;
+
+                    case 14:
+                        System.out.println("Criptografando todas as habilidades com XOR...");
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.encryptMapXOR(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        System.out.println(
+                                "Todas as habilidades foram criptografadas com XOR. Aqui está a lista de cartas:");
+                        // Exibe todas as cartas após criptografia
+                        for (CartaMagic cartaCriptografada : dao.listarTodos()) {
+                            System.out.println(cartaCriptografada);
+                        }
+                        break;
+
+                    case 15:
+                        System.out.println("Descriptografando todas as habilidades com AES...");
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapAES(habilidadesAtual));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        System.out.println(
+                                "Todas as habilidades foram descriptografadas com AES.");
+                        break;
+
+                    case 16:
+                        System.out.println("Descriptografando todas as habilidades com XOR...");
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapXOR(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        System.out.println(
+                                "Todas as habilidades foram descriptografadas com XOR.");
+                        break;
                     case 0:
                         running = false;
                         System.out.println("Saindo do programa...");
                         break;
 
                     default:
-                        System.out.println("Opção inválida! Tente novamente.");
+                        System.out.println("Opção inválida! Tente novamente. ");
                 }
             }
         } catch (IOException e) {

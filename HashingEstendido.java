@@ -45,7 +45,7 @@ public class HashingEstendido {
             bucket.add(new Registro(id, pos));
             salvarIndice();
         } else {
-            System.out.println("Bucket cheio! Implementar expansão...");
+            // System.out.println("Bucket cheio! Implementar expansão...");
         }
     }
 
