@@ -7,7 +7,7 @@ import java.util.Base64;
 import java.util.HashMap;
 
 public class CryptoUtils {
-    
+
     private static final String AES_KEY = "1234567890abcdef"; // 16 bytes
 
     // AES
@@ -66,16 +66,19 @@ public class CryptoUtils {
         return decrypted;
     }
 
-    public static Map<String, Integer> encryptMapXOR(Map<String, Integer> map, char key) {
+    public static Map<String, Integer> encryptMapXORInt(Map<String, Integer> original, char key) {
         Map<String, Integer> encrypted = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : map.entrySet()) {
-            String encryptedKey = encryptXOR(entry.getKey(), key);
-            encrypted.put(encryptedKey, entry.getValue());
+        for (Map.Entry<String, Integer> entry : original.entrySet()) {
+            int originalValue = entry.getValue();
+            int encryptedValue = originalValue ^ (int) key; // Aplica XOR
+            encrypted.put(entry.getKey(), encryptedValue);
         }
         return encrypted;
     }
 
-    public static Map<String, Integer> decryptMapXOR(Map<String, Integer> map, char key) {
-        return encryptMapXOR(map, key); // simétrico
+    public static Map<String, Integer> decryptMapXOR(Map<String, Integer> encrypted, char key) {
+        // XOR com mesma chave reverte
+        return encryptMapXORInt(encrypted, key);
     }
+
 }

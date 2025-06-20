@@ -193,6 +193,16 @@ public class Main {
 
                     case 7:
                         System.out.println("\n=== Exibindo Todos os Registros ===");
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapAES(habilidadesAtual));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapXOR(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
                         List<CartaMagic> todasCartas = dao.listarTodos();
                         if (todasCartas.isEmpty()) {
                             System.out.println("Nenhuma carta registrada.");
@@ -204,10 +214,30 @@ public class Main {
                         break;
 
                     case 8:
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapAES(habilidadesAtual));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapXOR(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
                         dao.getArvore().exibirArvore(); // Chama o método de exibição da árvore
                         break;
 
                     case 9:
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapAES(habilidadesAtual));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
+                        for (CartaMagic cartaAtual : dao.listarTodos()) {
+                            Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
+                            cartaAtual.setHabilidades(CryptoUtils.decryptMapXOR(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual);
+                        }
                         dao.exibirEstadoHashing(); // Chama o método de exibição da tabela
                         break;
 
@@ -278,8 +308,9 @@ public class Main {
                         System.out.println("Criptografando todas as habilidades com XOR...");
                         for (CartaMagic cartaAtual : dao.listarTodos()) {
                             Map<String, Integer> habilidadesAtual = cartaAtual.getHabilidades();
-                            cartaAtual.setHabilidades(CryptoUtils.encryptMapXOR(habilidadesAtual, 'K'));
-                            dao.update(cartaAtual.getId(), cartaAtual);
+                            cartaAtual.setHabilidades(CryptoUtils.encryptMapXORInt(habilidadesAtual, 'K'));
+                            dao.update(cartaAtual.getId(), cartaAtual); // cartaAtual já modificada
+
                         }
                         System.out.println(
                                 "Todas as habilidades foram criptografadas com XOR. Aqui está a lista de cartas:");
