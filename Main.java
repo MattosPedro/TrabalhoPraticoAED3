@@ -48,7 +48,7 @@ public class Main {
                         System.out.print("Digite seu nome de usuário Kaggle (utilizar joaopedroreis10): ");
                         String kaggleUsername = scanner.nextLine();
                         System.out
-                                .print("Digite sua chave da API Kaggle (utilizar 9c3127acd68ac7514f5eea16517578e0): ");
+                                .print("Digite sua chave da API Kaggle (utilizar 4317f78fce2e746aae963a48a51e4907): ");
                         String kaggleKey = scanner.nextLine();
 
                         // Caminho para o arquivo ZIP e onde descompactar
